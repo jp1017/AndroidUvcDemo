@@ -7,7 +7,7 @@
 #include <android/bitmap.h>
 #include <malloc.h>
 
-void Java_com_ford_openxc_webcam_NativeWebcam_loadNextFrame(JNIEnv* env,
+void Java_com_ford_openxc_webcam_webcam_NativeWebcam_loadNextFrame(JNIEnv* env,
         jobject thiz, jobject bitmap) {
     AndroidBitmapInfo info;
     int result;
@@ -42,7 +42,7 @@ void Java_com_ford_openxc_webcam_NativeWebcam_loadNextFrame(JNIEnv* env,
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-jint Java_com_ford_openxc_webcam_NativeWebcam_startCamera(JNIEnv* env,
+jint Java_com_ford_openxc_webcam_webcam_NativeWebcam_startCamera(JNIEnv* env,
         jobject thiz, jstring deviceName, jint width, jint height) {
     const char* dev_name = (*env)->GetStringUTFChars(env, deviceName, 0);
     int result = open_device(dev_name, &DEVICE_DESCRIPTOR);
@@ -69,12 +69,12 @@ jint Java_com_ford_openxc_webcam_NativeWebcam_startCamera(JNIEnv* env,
     return result;
 }
 
-void Java_com_ford_openxc_webcam_NativeWebcam_stopCamera(JNIEnv* env,
+void Java_com_ford_openxc_webcam_webcam_NativeWebcam_stopCamera(JNIEnv* env,
         jobject thiz) {
     stop_camera(&DEVICE_DESCRIPTOR, RGB_BUFFER, Y_BUFFER);
 }
 
-jboolean Java_com_ford_openxc_webcam_NativeWebcam_cameraAttached(JNIEnv* env,
+jboolean Java_com_ford_openxc_webcam_webcam_NativeWebcam_cameraAttached(JNIEnv* env,
         jobject thiz) {
     return DEVICE_DESCRIPTOR != -1;
 }
