@@ -1,4 +1,4 @@
-package com.ford.openxc.webcam;
+package com.ford.openxc.webcam.webcam;
 
 import android.app.Service;
 import android.content.Intent;
@@ -25,7 +25,8 @@ public class WebcamManager extends Service {
         super.onCreate();
         Log.i(TAG, "Service starting");
 
-        mWebcam = new NativeWebcam("/dev/video0");
+        // TODO: 16-3-22 修改video设备号
+        mWebcam = new NativeWebcam("/dev/video10");
     }
 
     @Override

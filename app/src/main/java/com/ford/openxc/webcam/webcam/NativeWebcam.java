@@ -1,4 +1,4 @@
-package com.ford.openxc.webcam;
+package com.ford.openxc.webcam.webcam;
 
 import java.io.File;
 

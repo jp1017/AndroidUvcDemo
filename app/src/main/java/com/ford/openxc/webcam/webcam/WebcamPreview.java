@@ -1,4 +1,4 @@
-package com.ford.openxc.webcam;
+package com.ford.openxc.webcam.webcam;
 
 import android.content.ComponentName;
 import android.content.Context;
