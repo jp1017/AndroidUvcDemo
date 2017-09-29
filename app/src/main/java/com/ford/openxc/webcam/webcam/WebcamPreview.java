@@ -9,18 +9,19 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.os.IBinder;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import com.socks.library.KLog;
+
 public class WebcamPreview extends SurfaceView implements
         SurfaceHolder.Callback, Runnable {
-    private static String TAG = "WebcamPreview";
+    private final static String TAG = "WebcamPreview";
 
     private Rect mViewWindow;
-    private boolean mRunning = true;
-    private Object mServiceSyncToken = new Object();
-    private WebcamManager mWebcamManager;
+    private volatile boolean mRunning = true;
+    private final Object mServiceSyncToken = new Object();
+    private WebcamService mWebcamService;
     private SurfaceHolder mHolder;
 
     public WebcamPreview(Context context) {
@@ -34,18 +35,39 @@ public class WebcamPreview extends SurfaceView implements
     }
 
     private void init() {
-        Log.d(TAG, "WebcamPreview constructed");
+        KLog.w(TAG, "WebcamPreview constructed");
         setFocusable(true);
 
         mHolder = getHolder();
         mHolder.addCallback(this);
     }
 
+    public void startPreview(String video) {
+//        stopPreview();
+
+        mRunning = true;
+
+        Intent intent = new Intent(getContext(), WebcamService.class);
+        intent.putExtra("video", video);
+        getContext().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        (new Thread(this)).start();
+    }
+
+    public void stopPreview() {
+        mRunning = false;
+
+        if(mWebcamService != null) {
+            KLog.w(TAG, "Unbinding from webcam manager");
+            getContext().unbindService(mConnection);
+            mWebcamService = null;
+        }
+    }
+
     @Override
     public void run() {
         while(mRunning) {
             synchronized(mServiceSyncToken) {
-                if(mWebcamManager == null) {
+                if(mWebcamService == null) {
                     try {
                         mServiceSyncToken.wait();
                     } catch(InterruptedException e) {
@@ -53,7 +75,7 @@ public class WebcamPreview extends SurfaceView implements
                     }
                 }
 
-                Bitmap bitmap = mWebcamManager.getFrame();
+                Bitmap bitmap = mWebcamService.getFrame();
                 Canvas canvas = mHolder.lockCanvas();
                 if(canvas != null) {
                     drawOnCanvas(canvas, bitmap);
@@ -73,29 +95,22 @@ public class WebcamPreview extends SurfaceView implements
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        Log.d(TAG, "Surface created");
-        mRunning = true;
-        getContext().bindService(new Intent(getContext(), WebcamManager.class),
-                mConnection, Context.BIND_AUTO_CREATE);
-        (new Thread(this)).start();
+        KLog.w(TAG, "Surface created");
+
+        startPreview(WebcamService.VIDEO);
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.d(TAG, "Surface destroyed");
-        mRunning = false;
+        KLog.w(TAG, "Surface destroyed");
 
-        if(mWebcamManager != null) {
-            Log.i(TAG, "Unbinding from webcam manager");
-            getContext().unbindService(mConnection);
-            mWebcamManager = null;
-        }
+        stopPreview();
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int winWidth,
             int winHeight) {
-        Log.d("WebCam", "surfaceChanged");
+        KLog.w("WebCam", "surfaceChanged");
         int width, height, dw, dh;
         if(winWidth * 3 / 4 <= winHeight) {
             dw = 0;
@@ -114,18 +129,18 @@ public class WebcamPreview extends SurfaceView implements
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className,
                 IBinder service) {
-            Log.i(TAG, "Bound to WebcamManager");
+            KLog.w(TAG, "Bound to WebcamManager");
             synchronized(mServiceSyncToken) {
-                mWebcamManager = ((WebcamManager.WebcamBinder)service).getService();
+                mWebcamService = ((WebcamService.WebcamBinder)service).getService();
                 mServiceSyncToken.notify();
             }
         }
 
         public void onServiceDisconnected(ComponentName className) {
-            Log.w(TAG, "WebcamManager disconnected unexpectedly");
+            KLog.w(TAG, "WebcamManager disconnected unexpectedly");
             synchronized(mServiceSyncToken) {
                 mRunning = false;
-                mWebcamManager = null;
+                mWebcamService = null;
                 mServiceSyncToken.notify();
             }
         }
